@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+ORIG_DIR="$(pwd)"
+cd "$(dirname "$0")"
+
+DEV_NAME="godevelop"
+if [ -n "$1" ]; then DEV_NAME="$1"; fi
+echo "Using image/container name: ${DEV_NAME}"
+
+DEV_DOCKERFILE="Dockerfile-dev"
+DEV_COMPOSE_FILE="docker-compose-dev.yml"
+
+function writeDockerfile()
+{
+  cat - <<EOF >${DEV_DOCKERFILE}
+FROM golang
+WORKDIR /app
+ENTRYPOINT [ "go", "run", "." ]
+EOF
+}
+
+function writeComposeFile() {
+  cat - <<EOF >${DEV_COMPOSE_FILE}
+version: '3'
+services:
+  ${DEV_NAME}:
+    build:
+      context: .
+      dockerfile: ${DEV_DOCKERFILE}
+    image: ${DEV_NAME}
+    container_name: ${DEV_NAME}
+    restart: "no"
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - ./goenv/go:/go
+      - ./goenv/cache:/.cache
+    user: ${UID}:${UID}
+EOF
+}
+
+function prepareGoEnv()
+{
+  mkdir -p goenv/go
+  mkdir -p goenv/cache
+}
+
+function initiateDocker()
+{
+  echo "docker-compose -f \"${DEV_COMPOSE_FILE}\" down"
+  docker-compose -f "${DEV_COMPOSE_FILE}" down
+  echo "docker-compose -f \"${DEV_COMPOSE_FILE}\" up --build -d"
+  docker-compose -f "${DEV_COMPOSE_FILE}" up --build -d
+}
+
+function monitorAndWait()
+{
+  trap "docker-compose -f \"${DEV_COMPOSE_FILE}\" down" EXIT
+  docker-compose -f "${DEV_COMPOSE_FILE}" logs -f
+}
+
+writeDockerfile
+writeComposeFile
+prepareGoEnv
+initiateDocker
+monitorAndWait
+
+cd "${ORIG_DIR}"
