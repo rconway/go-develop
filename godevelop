@@ -11,6 +11,9 @@ APP_DIR="/app"
 DEV_DOCKERFILE="Dockerfile-dev"
 DEV_COMPOSE_FILE="docker-compose-dev.yml"
 
+MYUID=`id -u`
+MYGID=`id -g`
+
 function prepareGoEnv()
 {
   mkdir -p ${GOENV_DIR}/go
@@ -43,7 +46,7 @@ services:
       - $PWD:${APP_DIR}
       - $PWD/${GOENV_DIR}/go:/go
       - $PWD/${GOENV_DIR}/cache:/.cache
-    user: ${UID}:${UID}
+    user: ${MYUID}:${MYGID}
 EOF
 }
 
