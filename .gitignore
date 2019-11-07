@@ -13,3 +13,4 @@
 
 # go environment for container
 goenv
+.dockerignore

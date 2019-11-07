@@ -47,6 +47,13 @@ services:
 EOF
 }
 
+function writeDockerIgnore()
+{
+  touch .dockerignore
+  sed -i "/^${GOENV_DIR}\\//d" .dockerignore
+  echo "${GOENV_DIR}/" >> .dockerignore
+}
+
 function dockerCompose()
 {
   docker-compose -f "${GOENV_DIR}/${DEV_COMPOSE_FILE}" "$@"
@@ -67,5 +74,6 @@ function monitorWaitExit()
 prepareGoEnv
 writeDockerfile
 writeComposeFile
+writeDockerIgnore
 initiateDocker
 monitorWaitExit
