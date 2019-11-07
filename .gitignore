@@ -12,6 +12,4 @@
 *.out
 
 # go environment for container
-Dockerfile-dev
-docker-compose-dev.yml
 goenv
