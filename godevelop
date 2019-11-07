@@ -6,63 +6,66 @@ DEV_NAME="godevelop"
 if [ -n "$1" ]; then DEV_NAME="$1"; fi
 echo "Using image/container name: ${DEV_NAME}"
 
+GOENV_DIR="goenv"
+APP_DIR="/app"
 DEV_DOCKERFILE="Dockerfile-dev"
 DEV_COMPOSE_FILE="docker-compose-dev.yml"
 
+function prepareGoEnv()
+{
+  mkdir -p ${GOENV_DIR}/go
+  mkdir -p ${GOENV_DIR}/cache
+}
+
 function writeDockerfile()
 {
-  cat - <<EOF >${DEV_DOCKERFILE}
+  cat - <<EOF >${GOENV_DIR}/${DEV_DOCKERFILE}
 FROM golang
-WORKDIR /app
+WORKDIR ${APP_DIR}
 ENTRYPOINT [ "go", "run", "." ]
 EOF
 }
 
 function writeComposeFile() {
-  cat - <<EOF >${DEV_COMPOSE_FILE}
+  cat - <<EOF >${GOENV_DIR}/${DEV_COMPOSE_FILE}
 version: '3'
 services:
   ${DEV_NAME}:
     build:
-      context: .
-      dockerfile: ${DEV_DOCKERFILE}
+      context: ..
+      dockerfile: ${GOENV_DIR}/${DEV_DOCKERFILE}
     image: ${DEV_NAME}
     container_name: ${DEV_NAME}
     restart: "no"
     ports:
       - "8080:8080"
     volumes:
-      - .:/app
-      - ./goenv/go:/go
-      - ./goenv/cache:/.cache
+      - $PWD:${APP_DIR}
+      - $PWD/${GOENV_DIR}/go:/go
+      - $PWD/${GOENV_DIR}/cache:/.cache
     user: ${UID}:${UID}
 EOF
 }
 
-function prepareGoEnv()
+function dockerCompose()
 {
-  mkdir -p goenv/go
-  mkdir -p goenv/cache
+  docker-compose -f "${GOENV_DIR}/${DEV_COMPOSE_FILE}" "$@"
 }
 
 function initiateDocker()
 {
-  echo "docker-compose -f \"${DEV_COMPOSE_FILE}\" down"
-  docker-compose -f "${DEV_COMPOSE_FILE}" down
-  echo "docker-compose -f \"${DEV_COMPOSE_FILE}\" up --build -d"
-  docker-compose -f "${DEV_COMPOSE_FILE}" up --build -d
+  dockerCompose down
+  dockerCompose up --build -d
 }
 
-function monitorAndWait()
+function monitorWaitExit()
 {
-  trap "docker-compose -f \"${DEV_COMPOSE_FILE}\" down" EXIT
-  docker-compose -f "${DEV_COMPOSE_FILE}" logs -f
+  trap "dockerCompose down ; cd \"${ORIG_DIR}\"" EXIT
+  dockerCompose logs -f
 }
 
+prepareGoEnv
 writeDockerfile
 writeComposeFile
-prepareGoEnv
 initiateDocker
-monitorAndWait
-
-cd "${ORIG_DIR}"
+monitorWaitExit
