@@ -25,7 +25,10 @@ function writeDockerfile()
   cat - <<EOF >${GOENV_DIR}/${DEV_DOCKERFILE}
 FROM golang
 WORKDIR ${APP_DIR}
-ENTRYPOINT [ "go", "run", "." ]
+# RUN go get github.com/cespare/reflex
+# ENTRYPOINT [ "/go/bin/reflex", "-r", "test.go$", "-s", "go", "run", "." ]
+# ENTRYPOINT reflex -r 'test.go$' -s go run .
+ENTRYPOINT go run .
 EOF
 }
 
