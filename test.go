@@ -33,7 +33,9 @@ func main() {
 		}`
 		dingResponse := DingResponse{}
 		if err := json.Unmarshal([]byte(jsonStr), &dingResponse); err == nil {
-			json.NewEncoder(c.Writer).Encode(dingResponse)
+			enc := json.NewEncoder(c.Writer)
+			enc.SetIndent("", "  ")
+			enc.Encode(dingResponse)
 		} else {
 			log.Panic(err)
 		}
